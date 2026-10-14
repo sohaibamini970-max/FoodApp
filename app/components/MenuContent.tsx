@@ -4,6 +4,17 @@ import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useCart, formatPKR } from "../../components/CartContext";
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+/* ═════════════════ TYPES ═════════════════ */
+type Variant = {
+  id?: number;
+  label: string;
+  price: number;
+  is_default?: boolean;
+  sort_order?: number;
+};
+
 type Dish = {
   id: number;
   name: string;
@@ -14,7 +25,8 @@ type Dish = {
   rating: number;
   reviews: number;
   time: string;
-  category: string;
+  category: string; // slug
+  categoryLabel: string;
   img: string;
   tags: string[];
   popular?: boolean;
@@ -23,251 +35,118 @@ type Dish = {
   calories: number;
   serves: string;
   ingredients: string[];
+  variants: Variant[];
 };
 
-const CATEGORIES = [
-  { id: "all", label: "All", icon: "🍽️" },
-  { id: "burgers", label: "Burgers", icon: "🍔" },
-  { id: "pizza", label: "Pizza", icon: "🍕" },
-  { id: "sushi", label: "Sushi", icon: "🍣" },
-  { id: "pasta", label: "Pasta", icon: "🍝" },
-  { id: "desserts", label: "Desserts", icon: "🍰" },
-  { id: "drinks", label: "Drinks", icon: "🥤" },
-  { id: "salads", label: "Salads", icon: "🥗" },
-];
+type CategoryPill = {
+  id: string;
+  label: string;
+  icon: string;
+  icon_url?: string | null;
+};
 
-const DISHES: Dish[] = [
-  {
-    id: 1,
-    name: "Double Cheeseburger",
-    desc: "Two juicy beef patties, melted cheddar, lettuce, tomato, special sauce",
-    longDesc:
-      "Our signature double cheeseburger features two hand-pressed 100% Angus beef patties, flame-grilled to perfection. Layered with aged cheddar cheese, crisp lettuce, ripe tomatoes, and our secret house sauce, all nestled in a toasted brioche bun. A true classic that never disappoints.",
-    price: 1299,
-    oldPrice: 1699,
-    rating: 4.9,
-    reviews: 342,
-    time: "25 min",
-    category: "burgers",
-    img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80",
-    tags: ["Popular", "Best Seller"],
-    popular: true,
-    calories: 850,
-    serves: "1 person",
-    ingredients: ["Angus Beef", "Cheddar", "Lettuce", "Tomato", "Brioche Bun", "House Sauce"],
-  },
-  {
-    id: 2,
-    name: "Pepperoni Pizza",
-    desc: "Wood-fired crust, premium pepperoni, mozzarella, tomato sauce",
-    longDesc:
-      "A wood-fired masterpiece topped with premium pepperoni, fresh mozzarella, and our signature San Marzano tomato sauce. Baked in a traditional stone oven for that perfect crispy-yet-chewy crust with smoky charred edges.",
-    price: 1599,
-    oldPrice: 1999,
-    rating: 4.8,
-    reviews: 289,
-    time: "30 min",
-    category: "pizza",
-    img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&q=80",
-    tags: ["Hot 🔥"],
-    spicy: true,
-    popular: true,
-    calories: 1100,
-    serves: "2-3 people",
-    ingredients: ["Pizza Dough", "Pepperoni", "Mozzarella", "Tomato Sauce", "Oregano"],
-  },
-  {
-    id: 3,
-    name: "Salmon Sushi Set",
-    desc: "Fresh salmon nigiri, maki rolls, wasabi, pickled ginger",
-    longDesc:
-      "An exquisite assortment of fresh Norwegian salmon nigiri and maki rolls, handcrafted by our sushi masters. Served with wasabi, pickled ginger, and premium soy sauce. A taste of authentic Japan in every bite.",
-    price: 2299,
-    oldPrice: 2899,
-    rating: 4.9,
-    reviews: 198,
-    time: "35 min",
-    category: "sushi",
-    img: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800&q=80",
-    tags: ["Chef's Pick"],
-    popular: true,
-    calories: 620,
-    serves: "1-2 people",
-    ingredients: ["Fresh Salmon", "Sushi Rice", "Nori", "Wasabi", "Ginger", "Soy Sauce"],
-  },
-  {
-    id: 4,
-    name: "Chocolate Lava Cake",
-    desc: "Warm molten chocolate center, vanilla ice cream, berries",
-    longDesc:
-      "Indulge in our decadent chocolate lava cake with a warm molten center that flows beautifully when cut. Served with a scoop of premium vanilla bean ice cream and fresh seasonal berries. The perfect ending to any meal.",
-    price: 899,
-    oldPrice: 1199,
-    rating: 5.0,
-    reviews: 421,
-    time: "20 min",
-    category: "desserts",
-    img: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=800&q=80",
-    tags: ["New"],
-    popular: true,
-    calories: 480,
-    serves: "1 person",
-    ingredients: ["Dark Chocolate", "Butter", "Eggs", "Flour", "Vanilla Ice Cream", "Berries"],
-  },
-  {
-    id: 5,
-    name: "Fresh Berry Smoothie",
-    desc: "Mixed berries, banana, Greek yogurt, honey",
-    longDesc:
-      "A refreshing blend of fresh strawberries, blueberries, raspberries, and banana, mixed with creamy Greek yogurt and a touch of natural honey. Packed with antioxidants and vitamins — a delicious way to stay healthy.",
-    price: 699,
-    oldPrice: 899,
-    rating: 4.7,
-    reviews: 156,
-    time: "15 min",
-    category: "drinks",
-    img: "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=800&q=80",
-    tags: ["Healthy"],
-    veg: true,
-    calories: 250,
-    serves: "1 person",
-    ingredients: ["Strawberries", "Blueberries", "Banana", "Greek Yogurt", "Honey"],
-  },
-  {
-    id: 6,
-    name: "Caesar Salad Bowl",
-    desc: "Crisp romaine, parmesan, grilled chicken, croutons",
-    longDesc:
-      "Fresh crisp romaine lettuce tossed in our creamy Caesar dressing, topped with grilled chicken breast, shaved parmesan, and crunchy croutons. A perfect balance of flavors and textures for a light yet satisfying meal.",
-    price: 1099,
-    oldPrice: 1399,
-    rating: 4.6,
-    reviews: 132,
-    time: "20 min",
-    category: "salads",
-    img: "https://images.unsplash.com/photo-1546793665-c74683f339c1?w=800&q=80",
-    tags: ["Light"],
-    calories: 380,
-    serves: "1 person",
-    ingredients: ["Romaine Lettuce", "Grilled Chicken", "Parmesan", "Croutons", "Caesar Dressing"],
-  },
-  {
-    id: 7,
-    name: "Truffle Mushroom Pasta",
-    desc: "Creamy truffle sauce, wild mushrooms, parmesan, fresh basil",
-    longDesc:
-      "Al dente fettuccine tossed in a rich, creamy black truffle sauce with sautéed wild mushrooms and finished with freshly grated parmesan and basil. An elegant, aromatic dish that's pure comfort in every forkful.",
-    price: 1899,
-    oldPrice: 2399,
-    rating: 4.9,
-    reviews: 267,
-    time: "30 min",
-    category: "pasta",
-    img: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&q=80",
-    tags: ["Premium"],
-    veg: true,
-    calories: 720,
-    serves: "1-2 people",
-    ingredients: ["Fettuccine", "Black Truffle", "Wild Mushrooms", "Parmesan", "Cream", "Basil"],
-  },
-  {
-    id: 8,
-    name: "BBQ Bacon Burger",
-    desc: "Smoky BBQ sauce, crispy bacon, onion rings, cheddar",
-    longDesc:
-      "A smoky sensation featuring a juicy beef patty topped with crispy bacon, golden onion rings, melted cheddar, and our signature smoky BBQ sauce. Served on a toasted sesame bun for the ultimate BBQ experience.",
-    price: 1499,
-    oldPrice: 1899,
-    rating: 4.8,
-    reviews: 305,
-    time: "28 min",
-    category: "burgers",
-    img: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&q=80",
-    tags: ["Popular"],
-    popular: true,
-    calories: 920,
-    serves: "1 person",
-    ingredients: ["Beef Patty", "Bacon", "Onion Rings", "Cheddar", "BBQ Sauce", "Sesame Bun"],
-  },
-  {
-    id: 9,
-    name: "Margherita Pizza",
-    desc: "San Marzano tomatoes, fresh mozzarella, basil, olive oil",
-    longDesc:
-      "The timeless Italian classic made with San Marzano tomatoes, fresh buffalo mozzarella, hand-picked basil leaves, and a drizzle of extra virgin olive oil. Simple, fresh, and absolutely perfect.",
-    price: 1399,
-    oldPrice: 1799,
-    rating: 4.7,
-    reviews: 234,
-    time: "28 min",
-    category: "pizza",
-    img: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=800&q=80",
-    tags: ["Classic"],
-    veg: true,
-    calories: 850,
-    serves: "2-3 people",
-    ingredients: ["Pizza Dough", "San Marzano Tomatoes", "Mozzarella", "Basil", "Olive Oil"],
-  },
-  {
-    id: 10,
-    name: "Dragon Roll Sushi",
-    desc: "Shrimp tempura, avocado, eel sauce, tobiko",
-    longDesc:
-      "A spectacular signature roll featuring crispy shrimp tempura and creamy avocado, topped with eel sauce, tobiko, and microgreens. A visual and flavor masterpiece that's as beautiful as it is delicious.",
-    price: 2499,
-    oldPrice: 2999,
-    rating: 4.9,
-    reviews: 178,
-    time: "40 min",
-    category: "sushi",
-    img: "https://images.unsplash.com/photo-1611143669185-af224c5e3252?w=800&q=80",
-    tags: ["Signature"],
-    spicy: true,
-    calories: 540,
-    serves: "1-2 people",
-    ingredients: ["Shrimp Tempura", "Avocado", "Eel Sauce", "Tobiko", "Sushi Rice", "Nori"],
-  },
-  {
-    id: 11,
-    name: "Tiramisu",
-    desc: "Espresso-soaked ladyfingers, mascarpone, cocoa",
-    longDesc:
-      "Authentic Italian tiramisu made with espresso-soaked ladyfingers layered with creamy mascarpone cheese and dusted with premium cocoa powder. A classic dessert that melts in your mouth.",
-    price: 999,
-    oldPrice: 1299,
-    rating: 4.9,
-    reviews: 289,
-    time: "15 min",
-    category: "desserts",
-    img: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=800&q=80",
-    tags: ["Italian"],
-    veg: true,
-    calories: 420,
-    serves: "1 person",
-    ingredients: ["Ladyfingers", "Espresso", "Mascarpone", "Cocoa", "Eggs", "Sugar"],
-  },
-  {
-    id: 12,
-    name: "Iced Caramel Latte",
-    desc: "Double espresso, caramel, milk, ice",
-    longDesc:
-      "A refreshing iced latte made with a double shot of premium espresso, velvety steamed milk, rich caramel syrup, and served over ice. Sweet, smooth, and perfect for any time of day.",
-    price: 599,
-    oldPrice: 799,
-    rating: 4.6,
-    reviews: 145,
-    time: "10 min",
-    category: "drinks",
-    img: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=800&q=80",
-    tags: ["Cold"],
-    veg: true,
-    calories: 180,
-    serves: "1 person",
-    ingredients: ["Espresso", "Milk", "Caramel Syrup", "Ice"],
-  },
-];
+type ApiVariant = {
+  id: number;
+  label: string;
+  price: number | string;
+  is_default: boolean;
+  sort_order: number;
+};
 
+type ApiProduct = {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  long_desc: string;
+  price: number | string;
+  old_price: number | string | null;
+  category_id: number;
+  img: string;
+  rating: number | string;
+  reviews: number;
+  time: string;
+  calories: number;
+  serves: string;
+  ingredients: string[] | null;
+  veg: boolean;
+  spicy: boolean;
+  popular: boolean;
+  available: boolean;
+  variants?: ApiVariant[];
+  category_name?: string;
+  category_slug?: string;
+  category_icon?: string;
+  category_icon_url?: string | null;
+};
+
+type ApiCategory = {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string;
+  icon_url: string | null;
+  product_count?: number;
+};
+
+/* ═════════════════ MAPPING ═════════════════ */
+const mapProduct = (p: ApiProduct): Dish => {
+  const tags: string[] = [];
+  if (p.popular) tags.push("Popular");
+  if (p.veg) tags.push("Veg");
+  if (p.spicy) tags.push("Spicy");
+  if (p.old_price) {
+    const oldP = Number(p.old_price);
+    const curP = Number(p.price);
+    if (oldP > curP) {
+      const off = Math.round(((oldP - curP) / oldP) * 100);
+      if (off > 0) tags.push(`${off}% Off`);
+    }
+  }
+
+  const variants: Variant[] = (p.variants || []).map((v) => ({
+    id: v.id,
+    label: v.label,
+    price: Number(v.price),
+    is_default: v.is_default,
+    sort_order: v.sort_order,
+  }));
+
+  return {
+    id: p.id,
+    name: p.name,
+    desc: p.description || p.long_desc || "",
+    longDesc: p.long_desc || p.description || "",
+    price: Number(p.price),
+    oldPrice: p.old_price ? Number(p.old_price) : undefined,
+    rating: Number(p.rating) || 5,
+    reviews: Number(p.reviews) || 0,
+    time: p.time || "25 min",
+    category: p.category_slug || p.category_name || "",
+    categoryLabel: p.category_name || p.category_slug || "",
+    img: p.img,
+    tags: tags.length ? tags : ["New"],
+    popular: p.popular,
+    spicy: p.spicy,
+    veg: p.veg,
+    calories: Number(p.calories) || 0,
+    serves: p.serves || "1 person",
+    ingredients: p.ingredients || [],
+    variants,
+  };
+};
+
+/* ═════════════════ COMPONENT ═════════════════ */
 export default function MenuContent() {
+  /* ============ DATA STATE ============ */
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [categories, setCategories] = useState<CategoryPill[]>([
+    { id: "all", label: "All", icon: "🍽️" },
+  ]);
+  const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState("");
+
+  /* ============ FILTER STATE ============ */
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<
@@ -275,19 +154,78 @@ export default function MenuContent() {
   >("popular");
   const [onlyVeg, setOnlyVeg] = useState(false);
   const [maxPrice, setMaxPrice] = useState(3000);
+
+  /* ============ MODAL STATE ============ */
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [quantity, setQuantity] = useState(1);
 
-  // Global cart
   const { items, addItem, totalItems, subtotal } = useCart();
   const cartIds = items.map((i) => i.id);
 
-  // Reset quantity when opening a new dish
+  /* ============ LOAD DATA ============ */
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const [pRes, cRes] = await Promise.all([
+          fetch(`${API}/api/products`),
+          fetch(`${API}/api/categories`),
+        ]);
+
+        if (!pRes.ok || !cRes.ok) throw new Error("Failed to load menu");
+
+        const pData = await pRes.json();
+        const cData = await cRes.json();
+
+        if (cancelled) return;
+
+        const mapped = (pData.products || [])
+          .filter((p: ApiProduct) => p.available !== false)
+          .map(mapProduct);
+
+        setDishes(mapped);
+
+        const pills: CategoryPill[] = [
+          { id: "all", label: "All", icon: "🍽️" },
+          ...(cData.categories || []).map((c: ApiCategory) => ({
+            id: c.slug,
+            label: c.name,
+            icon: c.icon,
+            icon_url: c.icon_url,
+          })),
+        ];
+        setCategories(pills);
+
+        const highest = Math.max(0, ...mapped.map((d) => d.price));
+        if (highest > 3000) setMaxPrice(Math.ceil(highest / 100) * 100);
+      } catch {
+        if (!cancelled) setApiError("Could not load menu. Please refresh.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /* ============ RESET QTY + VARIANT WHEN OPENING DISH ============ */
   useEffect(() => {
     setQuantity(1);
+    if (selectedDish?.variants && selectedDish.variants.length > 0) {
+      const def =
+        selectedDish.variants.find((v) => v.is_default) ||
+        selectedDish.variants[0];
+      setSelectedVariant(def);
+    } else {
+      setSelectedVariant(null);
+    }
   }, [selectedDish]);
 
-  // Lock scroll when modal is open
+  /* ============ LOCK BODY SCROLL ============ */
   useEffect(() => {
     document.body.style.overflow = selectedDish ? "hidden" : "unset";
     return () => {
@@ -295,7 +233,7 @@ export default function MenuContent() {
     };
   }, [selectedDish]);
 
-  // Close modal on Escape
+  /* ============ ESC TO CLOSE ============ */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setSelectedDish(null);
@@ -304,8 +242,9 @@ export default function MenuContent() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  /* ============ FILTER + SORT ============ */
   const filtered = useMemo(() => {
-    let list = DISHES.filter((d) => {
+    let list = dishes.filter((d) => {
       if (activeCategory !== "all" && d.category !== activeCategory) return false;
       if (onlyVeg && !d.veg) return false;
       if (d.price > maxPrice) return false;
@@ -334,30 +273,71 @@ export default function MenuContent() {
         );
     }
     return list;
-  }, [activeCategory, search, sortBy, onlyVeg, maxPrice]);
+  }, [dishes, activeCategory, search, sortBy, onlyVeg, maxPrice]);
 
-  /* ============ ADD TO CART ============ */
-  const addToCart = (dish: Dish, e?: React.MouseEvent, qty = 1) => {
-    e?.stopPropagation();
-    addItem(
-      {
-        id: dish.id,
-        name: dish.name,
-        price: dish.price,
-        oldPrice: dish.oldPrice,
-        img: dish.img,
-        time: dish.time,
-        category: dish.category,
-      },
-      qty
-    );
+  /* ============ CART HELPERS ============ */
+  // Unique cart ID per variant so Small/Large don't collide
+  const variantCartId = (dish: Dish, variant: Variant | null) => {
+    if (!variant) return dish.id;
+    const variantKey = variant.id ?? dish.variants.indexOf(variant) + 1;
+    return dish.id * 1000 + variantKey;
   };
 
-  const handleAddFromModal = () => {
+  // Effective price: variant price if chosen, else base
+  const effectivePrice = selectedVariant?.price ?? selectedDish?.price ?? 0;
+
+  /* ============ ADD TO CART (from card) ============ */
+  const addToCart = async (dish: Dish, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+
+    const variant =
+      dish.variants.length > 0
+        ? dish.variants.find((v) => v.is_default) || dish.variants[0]
+        : null;
+
+    const res = await addItem({
+      product_id: dish.id,
+      variant_id: variant?.id ?? null,
+      quantity: 1,
+    });
+
+    if (!res.ok) {
+      alert(res.error || "Could not add to cart");
+    }
+  };
+
+  /* ============ ADD TO CART (from modal) ============ */
+  const handleAddFromModal = async () => {
     if (!selectedDish) return;
-    addToCart(selectedDish, undefined, quantity);
+    if (selectedDish.variants.length > 0 && !selectedVariant) return;
+
+    const res = await addItem({
+      product_id: selectedDish.id,
+      variant_id: selectedVariant?.id ?? null,
+      quantity,
+    });
+
+    if (!res.ok) {
+      alert(res.error || "Could not add to cart");
+      return;
+    }
+
     setSelectedDish(null);
   };
+
+  const resetFilters = () => {
+    setActiveCategory("all");
+    setSearch("");
+    setOnlyVeg(false);
+    setMaxPrice(3000);
+    setSortBy("popular");
+  };
+
+  /* ============ CHECK IF CART HAS ANY VARIANT OF A DISH ============ */
+  const hasAnyVariantInCart = (dish: Dish) =>
+    cartIds.some(
+      (id) => id === dish.id || (id > dish.id * 1000 && id < dish.id * 1000 + 1000)
+    );
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white">
@@ -378,7 +358,10 @@ export default function MenuContent() {
 
         <div className="relative mx-auto max-w-7xl px-6 text-center">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-sm font-medium text-orange-300 backdrop-blur">
-            <span className="animate-pulse">🔥</span> 200+ Dishes Available
+            <span className="animate-pulse">🔥</span>{" "}
+            {dishes.length > 0
+              ? `${dishes.length}+ Dishes Available`
+              : "Loading menu…"}
           </div>
           <h1 className="text-5xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
             Explore Our{" "}
@@ -423,22 +406,29 @@ export default function MenuContent() {
         <div className="mx-auto max-w-7xl px-6">
           {/* Category pills */}
           <div className="scrollbar-hide -mx-6 mb-8 flex gap-3 overflow-x-auto px-6 pb-2">
-            {CATEGORIES.map((cat) => {
+            {categories.map((cat) => {
               const active = activeCategory === cat.id;
               return (
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`group flex shrink-0 items-center gap-2 rounded-full border px-5 py-3 text-sm font-semibold transition ${
-                    active
+                  className={`group flex shrink-0 items-center gap-2 rounded-full border px-5 py-3 text-sm font-semibold transition ${active
                       ? "border-orange-500 bg-gradient-to-r from-orange-500 to-red-500 shadow-lg shadow-orange-500/30"
                       : "border-white/10 bg-white/5 hover:border-orange-500/50 hover:bg-white/10"
-                  }`}
+                    }`}
                 >
-                  <span className="text-lg transition group-hover:scale-110">
-                    {cat.icon}
-                  </span>
-                  {cat.label}
+                  {cat.icon_url ? (
+                    <img
+                      src={cat.icon_url}
+                      alt={cat.label}
+                      className="h-5 w-5 rounded-full object-cover transition group-hover:scale-110"
+                    />
+                  ) : (
+                    <span className="text-lg transition group-hover:scale-110">
+                      {cat.icon}
+                    </span>
+                  )}
+                  <span className="capitalize">{cat.label}</span>
                 </button>
               );
             })}
@@ -456,11 +446,10 @@ export default function MenuContent() {
             <div className="flex flex-wrap items-center gap-4">
               <button
                 onClick={() => setOnlyVeg(!onlyVeg)}
-                className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
-                  onlyVeg
+                className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${onlyVeg
                     ? "border-green-500 bg-green-500/20 text-green-300"
                     : "border-white/10 hover:bg-white/10"
-                }`}
+                  }`}
               >
                 <span className="text-base">🌱</span> Veg Only
               </button>
@@ -470,7 +459,7 @@ export default function MenuContent() {
                 <input
                   type="range"
                   min="500"
-                  max="3000"
+                  max={Math.max(3000, maxPrice)}
                   step="100"
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(Number(e.target.value))}
@@ -499,8 +488,24 @@ export default function MenuContent() {
             </div>
           </div>
 
-          {/* Empty state */}
-          {filtered.length === 0 && (
+          {apiError && (
+            <div className="mb-8 rounded-3xl border border-red-500/30 bg-red-500/10 p-6 text-center text-sm text-red-300">
+              ❌ {apiError}
+            </div>
+          )}
+
+          {loading && (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-80 animate-pulse rounded-3xl border border-white/10 bg-white/5"
+                />
+              ))}
+            </div>
+          )}
+
+          {!loading && filtered.length === 0 && (
             <div className="rounded-3xl border border-white/10 bg-white/5 p-16 text-center">
               <div className="text-6xl">🍽️</div>
               <h3 className="mt-4 text-2xl font-bold">No dishes found</h3>
@@ -508,12 +513,7 @@ export default function MenuContent() {
                 Try adjusting your filters or search term.
               </p>
               <button
-                onClick={() => {
-                  setActiveCategory("all");
-                  setSearch("");
-                  setOnlyVeg(false);
-                  setMaxPrice(3000);
-                }}
+                onClick={resetFilters}
                 className="mt-6 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-6 py-3 font-semibold transition hover:scale-105"
               >
                 Reset Filters
@@ -522,113 +522,113 @@ export default function MenuContent() {
           )}
 
           {/* Grid */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filtered.map((dish, i) => (
-              <div
-                key={dish.id}
-                onClick={() => setSelectedDish(dish)}
-                className="group relative cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent transition-all duration-300 hover:-translate-y-2 hover:border-orange-500/50 hover:shadow-2xl hover:shadow-orange-500/20"
-                style={{ animationDelay: `${i * 30}ms` }}
-              >
-                {/* Image */}
-                <div className="relative h-52 overflow-hidden">
-                  <img
-                    src={dish.img}
-                    alt={dish.name}
-                    className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+          {!loading && filtered.length > 0 && (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filtered.map((dish, i) => {
+                const inCart = hasAnyVariantInCart(dish);
+                const hasVariants = dish.variants.length > 0;
 
-                  <span className="absolute left-3 top-3 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-3 py-1 text-xs font-bold shadow-lg">
-                    {dish.tags[0]}
-                  </span>
-
-                  <button
-                    onClick={(e) => e.stopPropagation()}
-                    className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur transition hover:bg-red-500 hover:scale-110"
+                return (
+                  <div
+                    key={dish.id}
+                    onClick={() => setSelectedDish(dish)}
+                    className="group relative cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent transition-all duration-300 hover:-translate-y-2 hover:border-orange-500/50 hover:shadow-2xl hover:shadow-orange-500/20"
+                    style={{ animationDelay: `${i * 30}ms` }}
                   >
-                    ♡
-                  </button>
+                    <div className="relative h-52 overflow-hidden">
+                      <img
+                        src={dish.img}
+                        alt={dish.name}
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
-                  <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                    <span className="rounded-full bg-black/60 px-3 py-1 text-xs backdrop-blur">
-                      ⏱ {dish.time}
-                    </span>
-                    {dish.spicy && (
-                      <span className="rounded-full bg-red-500/80 px-2 py-1 text-xs backdrop-blur">
-                        🌶️
+                      <span className="absolute left-3 top-3 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-3 py-1 text-xs font-bold shadow-lg">
+                        {dish.tags[0]}
                       </span>
-                    )}
-                    {dish.veg && (
-                      <span className="rounded-full bg-green-500/80 px-2 py-1 text-xs backdrop-blur">
-                        🌱
-                      </span>
-                    )}
-                  </div>
-                </div>
 
-                {/* Content */}
-                <div className="p-5">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-lg font-bold leading-tight">
-                      {dish.name}
-                    </h3>
-                    <div className="flex shrink-0 items-center gap-1 text-sm">
-                      <span className="text-yellow-400">★</span>
-                      <span className="font-semibold">{dish.rating}</span>
-                    </div>
-                  </div>
-
-                  <p className="mt-2 text-sm text-gray-400 line-clamp-2">
-                    {dish.desc}
-                  </p>
-
-                  <div className="mt-3 text-xs text-gray-500">
-                    {dish.reviews} reviews
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between border-t border-white/5 pt-4">
-                    <div className="flex flex-col">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-xl font-black text-orange-400">
-                          {formatPKR(dish.price)}
-                        </span>
-                      </div>
-                      {dish.oldPrice && (
-                        <span className="text-xs text-gray-500 line-through">
-                          {formatPKR(dish.oldPrice)}
+                      {hasVariants && (
+                        <span className="absolute right-14 top-3 rounded-full bg-purple-500/90 px-2 py-1 text-[10px] font-bold backdrop-blur">
+                          {dish.variants.length} sizes
                         </span>
                       )}
+
+                      <button
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur transition hover:bg-red-500 hover:scale-110"
+                      >
+                        ♡
+                      </button>
+
+                      <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                        <span className="rounded-full bg-black/60 px-3 py-1 text-xs backdrop-blur">
+                          ⏱ {dish.time}
+                        </span>
+                        {dish.spicy && (
+                          <span className="rounded-full bg-red-500/80 px-2 py-1 text-xs backdrop-blur">
+                            🌶️
+                          </span>
+                        )}
+                        {dish.veg && (
+                          <span className="rounded-full bg-green-500/80 px-2 py-1 text-xs backdrop-blur">
+                            🌱
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <button
-                      onClick={(e) => addToCart(dish, e)}
-                      className={`flex h-10 w-10 items-center justify-center rounded-full text-xl font-bold transition hover:scale-110 ${
-                        cartIds.includes(dish.id)
-                          ? "bg-green-500 shadow-lg shadow-green-500/30"
-                          : "bg-gradient-to-r from-orange-500 to-red-500 shadow-lg shadow-orange-500/30"
-                      }`}
-                      aria-label="Add to cart"
-                    >
-                      {cartIds.includes(dish.id) ? "✓" : "+"}
-                    </button>
+
+                    <div className="p-5">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-lg font-bold leading-tight">
+                          {dish.name}
+                        </h3>
+                        <div className="flex shrink-0 items-center gap-1 text-sm">
+                          <span className="text-yellow-400">★</span>
+                          <span className="font-semibold">{dish.rating}</span>
+                        </div>
+                      </div>
+
+                      <p className="mt-2 text-sm text-gray-400 line-clamp-2">
+                        {dish.desc}
+                      </p>
+
+                      <div className="mt-3 text-xs text-gray-500">
+                        {dish.reviews} reviews
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between border-t border-white/5 pt-4">
+                        <div className="flex flex-col">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-xl font-black text-orange-400">
+                              {hasVariants ? "from " : ""}
+                              {formatPKR(dish.price)}
+                            </span>
+                          </div>
+                          {dish.oldPrice && (
+                            <span className="text-xs text-gray-500 line-through">
+                              {formatPKR(dish.oldPrice)}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={(e) => addToCart(dish, e)}
+                          className={`flex h-10 w-10 items-center justify-center rounded-full text-xl font-bold transition hover:scale-110 ${inCart
+                              ? "bg-green-500 shadow-lg shadow-green-500/30"
+                              : "bg-gradient-to-r from-orange-500 to-red-500 shadow-lg shadow-orange-500/30"
+                            }`}
+                          aria-label="Add to cart"
+                        >
+                          {inCart ? "✓" : "+"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 transition group-hover:opacity-100">
+                      <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-orange-500/10 to-red-500/10" />
+                    </div>
                   </div>
-                </div>
-
-                <div className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 transition group-hover:opacity-100">
-                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-orange-500/10 to-red-500/10" />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {filtered.length > 0 && (
-            <div className="mt-16 text-center">
-              <button className="group relative inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/5 px-8 py-4 font-semibold backdrop-blur transition hover:bg-white/10">
-                Load More Dishes
-                <span className="transition-transform group-hover:translate-y-0.5">
-                  ↓
-                </span>
-              </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -692,7 +692,7 @@ export default function MenuContent() {
               <div className="overflow-y-auto p-6 sm:p-8 lg:max-h-[92vh]">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-widest text-orange-400">
-                    {selectedDish.category}
+                    {selectedDish.categoryLabel}
                   </span>
                   <div className="flex items-center gap-1 rounded-full border border-yellow-500/30 bg-yellow-500/10 px-3 py-1 text-sm">
                     <span className="text-yellow-400">★</span>
@@ -727,7 +727,7 @@ export default function MenuContent() {
 
                 <div className="mt-6 flex items-baseline gap-3">
                   <span className="text-4xl font-black text-orange-400">
-                    {formatPKR(selectedDish.price)}
+                    {formatPKR(effectivePrice)}
                   </span>
                   {selectedDish.oldPrice && (
                     <>
@@ -736,36 +736,72 @@ export default function MenuContent() {
                       </span>
                       <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-bold text-green-300">
                         Save{" "}
-                        {formatPKR(selectedDish.oldPrice - selectedDish.price)}
+                        {formatPKR(
+                          selectedDish.oldPrice - effectivePrice
+                        )}
                       </span>
                     </>
                   )}
                 </div>
+
+                {/* ═══════════ VARIANTS PICKER ═══════════ */}
+                {selectedDish.variants.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">
+                      Choose Size
+                    </h3>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {selectedDish.variants.map((v) => {
+                        const active = selectedVariant?.label === v.label;
+                        return (
+                          <button
+                            key={v.id ?? v.label}
+                            onClick={() => setSelectedVariant(v)}
+                            className={`rounded-2xl border px-4 py-3 text-sm font-bold transition ${active
+                                ? "border-orange-500 bg-gradient-to-r from-orange-500 to-red-500 shadow-lg shadow-orange-500/30"
+                                : "border-white/10 bg-white/5 hover:border-orange-500/50 hover:bg-white/10"
+                              }`}
+                          >
+                            <div>{v.label}</div>
+                            <div
+                              className={`mt-0.5 text-xs ${active ? "text-white/90" : "text-orange-400"
+                                }`}
+                            >
+                              {formatPKR(v.price)}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-6">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">
                     Description
                   </h3>
                   <p className="mt-2 text-gray-300 leading-relaxed">
-                    {selectedDish.longDesc}
+                    {selectedDish.longDesc || selectedDish.desc}
                   </p>
                 </div>
 
-                <div className="mt-6">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">
-                    Ingredients
-                  </h3>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {selectedDish.ingredients.map((ing) => (
-                      <span
-                        key={ing}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-gray-300"
-                      >
-                        {ing}
-                      </span>
-                    ))}
+                {selectedDish.ingredients.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">
+                      Ingredients
+                    </h3>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {selectedDish.ingredients.map((ing) => (
+                        <span
+                          key={ing}
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-gray-300"
+                        >
+                          {ing}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="mt-8 flex flex-col gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center">
                   <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1">
@@ -788,11 +824,14 @@ export default function MenuContent() {
 
                   <button
                     onClick={handleAddFromModal}
-                    className="group flex flex-1 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4 font-bold shadow-2xl shadow-orange-500/30 transition hover:scale-[1.02]"
+                    disabled={
+                      selectedDish.variants.length > 0 && !selectedVariant
+                    }
+                    className="group flex flex-1 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4 font-bold shadow-2xl shadow-orange-500/30 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <span>🛒 Add to Cart</span>
                     <span className="h-4 w-px bg-white/30" />
-                    <span>{formatPKR(selectedDish.price * quantity)}</span>
+                    <span>{formatPKR(effectivePrice * quantity)}</span>
                   </button>
                 </div>
 

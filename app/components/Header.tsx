@@ -49,6 +49,7 @@ export default function Header() {
     { id: "orders", label: "Orders", href: "/orders" },
     { id: "how", label: "How It Works", href: "/how" },
     { id: "reviews", label: "Reviews", href: "/reviews" },
+    { id: "contacts", label: "Contact", href: "/contact" },
   ];
 
   const activeId = links.find((l) => l.href === pathname)?.id ?? "";

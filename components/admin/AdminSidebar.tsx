@@ -17,6 +17,7 @@ const links = [
   { href: "/admin/deals", label: "Deals", icon: "🎁" },
   { href: "/admin/orders", label: "Orders", icon: "📦" },
   { href: "/admin/users", label: "Users", icon: "👥" },
+  { href: "/admin/contact", label: "Messages", icon: "📬" },
 ];
 
   const handleLogout = () => {

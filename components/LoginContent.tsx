@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./AuthContext";
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 export default function LoginContent() {
   const { login } = useAuth();
   const router = useRouter();
@@ -14,21 +16,21 @@ export default function LoginContent() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    setTimeout(() => {
-      const res = login(username.trim(), password);
-      if (!res.ok) {
-        setError(res.error || "Login failed");
-        setLoading(false);
-        return;
-      }
-      if (res.role === "admin") router.push("/admin");
-      else router.push("/");
-    }, 400);
+    const res = await login(username.trim(), password);
+
+    if (!res.ok) {
+      setError(res.error || "Login failed");
+      setLoading(false);
+      return;
+    }
+
+    if (res.role === "admin") router.push("/admin");
+    else router.push("/");
   };
 
   return (
@@ -50,10 +52,7 @@ export default function LoginContent() {
       <div className="relative flex min-h-screen items-center justify-center px-6 py-20">
         <div className="w-full max-w-md">
           {/* Logo */}
-          <Link
-            href="/"
-            className="mb-8 flex items-center justify-center gap-2"
-          >
+          <Link href="/" className="mb-8 flex items-center justify-center gap-2">
             <span className="text-4xl">🍔</span>
             <span className="text-3xl font-black">
               Foodie
@@ -70,33 +69,21 @@ export default function LoginContent() {
               Sign in to continue ordering delicious food.
             </p>
 
-            {/* Hint box */}
-            <div className="mt-6 rounded-2xl border border-orange-500/20 bg-orange-500/5 p-4 text-xs text-orange-300">
-              <div className="font-bold">🔑 Demo credentials</div>
-              <div className="mt-1">
-                Admin → <code className="text-white">admin</code> /{" "}
-                <code className="text-white">admin</code>
-              </div>
-              <div>
-                User → <code className="text-white">john@example.com</code> /{" "}
-                <code className="text-white">password</code>
-              </div>
-            </div>
-
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              {/* Username */}
+              {/* Username / Email */}
               <div>
                 <label className="text-xs font-bold uppercase tracking-widest text-gray-400">
-                  Username or Email
+                  Email
                 </label>
                 <div className="mt-2 flex items-center gap-3 rounded-full border border-white/10 bg-black/40 px-5 py-3.5 transition focus-within:border-orange-500/50">
                   <span>👤</span>
                   <input
-                    type="text"
+                    type="email"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="admin or your@email.com"
+                    placeholder="your@email.com"
                     required
+                    autoComplete="email"
                     className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-500"
                   />
                 </div>
@@ -115,6 +102,7 @@ export default function LoginContent() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
+                    autoComplete="current-password"
                     className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-500"
                   />
                   <button
@@ -137,7 +125,7 @@ export default function LoginContent() {
                   />
                   Remember me
                 </label>
-                <a href="#" className="text-orange-400 hover:text-orange-300">
+                <a href="/forgot-password" className="text-orange-400 hover:text-orange-300">
                   Forgot password?
                 </a>
               </div>
@@ -175,19 +163,31 @@ export default function LoginContent() {
               <div className="h-px flex-1 bg-white/10" />
             </div>
 
-            {/* Social */}
+            {/* Social — now dynamic */}
             <div className="grid grid-cols-2 gap-3">
-              <button className="flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 py-3 text-sm font-semibold transition hover:bg-white/10">
+              <button
+                type="button"
+                onClick={() =>
+                  (window.location.href = `${API}/api/oauth/google`)
+                }
+                className="flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 py-3 text-sm font-semibold transition hover:bg-white/10"
+              >
                 <span>🔵</span> Google
               </button>
-              <button className="flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 py-3 text-sm font-semibold transition hover:bg-white/10">
+              <button
+                type="button"
+                onClick={() =>
+                  (window.location.href = `${API}/api/oauth/facebook`)
+                }
+                className="flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 py-3 text-sm font-semibold transition hover:bg-white/10"
+              >
                 <span>📘</span> Facebook
               </button>
             </div>
 
             {/* Register link */}
             <p className="mt-8 text-center text-sm text-gray-400">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/register"
                 className="font-bold text-orange-400 transition hover:text-orange-300"

@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import Header from "./Header";
 import Footer from "./Footer";
+import { useCart, formatPKR } from "@/components/CartContext";
+import type { Category, Product } from "@/lib/types";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function Home() {
   return (
@@ -66,7 +71,7 @@ function Hero() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-orange-500" />
             </span>
-            Free delivery on orders over $30
+            Free delivery on orders over Rs 3,000
           </div>
 
           <h1 className="text-5xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl xl:text-8xl">
@@ -84,18 +89,26 @@ function Hero() {
           </p>
 
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row lg:justify-start">
-            <button className="group relative w-full overflow-hidden rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-8 py-4 font-bold shadow-2xl shadow-orange-500/30 transition hover:scale-105 sm:w-auto">
+            <Link
+              href="/menu"
+              className="group relative w-full overflow-hidden rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-8 py-4 text-center font-bold shadow-2xl shadow-orange-500/30 transition hover:scale-105 sm:w-auto"
+            >
               <span className="relative z-10 flex items-center justify-center gap-2">
                 Order Now
-                <span className="transition-transform group-hover:translate-x-1">→</span>
+                <span className="transition-transform group-hover:translate-x-1">
+                  →
+                </span>
               </span>
-            </button>
-            <button className="flex w-full items-center justify-center gap-3 rounded-full border border-white/20 bg-white/5 px-8 py-4 font-semibold backdrop-blur transition hover:bg-white/10 sm:w-auto">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black text-xs">
+            </Link>
+            <Link
+             href = "/deals"
+             className="flex w-full items-center justify-center gap-3 rounded-full border border-white/20 bg-white/5 px-8 py-4 font-semibold backdrop-blur transition hover:bg-white/10 sm:w-auto"
+             > 
+             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black text-xs">
                 ▶
               </span>
-              Watch Video
-            </button>
+              Grab Deals
+            </Link>
           </div>
 
           <div className="mt-12 flex justify-center gap-8 lg:justify-start">
@@ -106,7 +119,9 @@ function Hero() {
             ].map((s) => (
               <div key={s.label} className="text-center lg:text-left">
                 <div className="text-2xl font-black sm:text-3xl">{s.num}</div>
-                <div className="text-xs text-gray-500 sm:text-sm">{s.label}</div>
+                <div className="text-xs text-gray-500 sm:text-sm">
+                  {s.label}
+                </div>
               </div>
             ))}
           </div>
@@ -181,7 +196,9 @@ function Hero() {
       </div>
 
       <div className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 lg:flex">
-        <span className="text-xs uppercase tracking-widest text-gray-500">Scroll</span>
+        <span className="text-xs uppercase tracking-widest text-gray-500">
+          Scroll
+        </span>
         <div className="h-10 w-6 rounded-full border border-white/20 p-1">
           <div className="h-2 w-1 mx-auto animate-bounce rounded-full bg-orange-500" />
         </div>
@@ -204,9 +221,11 @@ function FloatCard({
   size?: "sm" | "md" | "lg";
 }) {
   const sizeClass =
-    size === "lg" ? "h-20 w-20 lg:h-28 lg:w-28" :
-    size === "sm" ? "h-16 w-16 lg:h-24 lg:w-24" :
-    "h-20 w-20 lg:h-24 lg:w-24";
+    size === "lg"
+      ? "h-20 w-20 lg:h-28 lg:w-28"
+      : size === "sm"
+        ? "h-16 w-16 lg:h-24 lg:w-24"
+        : "h-20 w-20 lg:h-24 lg:w-24";
 
   return (
     <div
@@ -214,7 +233,11 @@ function FloatCard({
       style={{ transform, transition: "transform 0.3s ease-out" }}
     >
       <div className="animate-[float_6s_ease-in-out_infinite] rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-3 shadow-2xl">
-        <img src={img} alt={alt} className={`${sizeClass} rounded-xl object-cover`} />
+        <img
+          src={img}
+          alt={alt}
+          className={`${sizeClass} rounded-xl object-cover`}
+        />
       </div>
     </div>
   );
@@ -225,7 +248,7 @@ function FloatCard({
 ============================================================ */
 function MarqueeStrip() {
   const items = [
-    "🔥 Free Delivery Over $30",
+    "🔥 Free Delivery Over Rs 3,000",
     "🍕 500+ Restaurants",
     "⚡ 30-Min Delivery",
     "⭐ 4.9 Star Rating",
@@ -246,17 +269,40 @@ function MarqueeStrip() {
 }
 
 /* ============================================================
-   CATEGORIES
+   CATEGORIES — now dynamic, links to /menu?category=slug
 ============================================================ */
 function Categories() {
-  const categories = [
-    { name: "Burgers", icon: "🍔", color: "from-orange-500 to-red-500", count: 120 },
-    { name: "Pizza", icon: "🍕", color: "from-red-500 to-pink-500", count: 85 },
-    { name: "Sushi", icon: "🍣", color: "from-teal-500 to-cyan-500", count: 64 },
-    { name: "Desserts", icon: "🍰", color: "from-pink-500 to-purple-500", count: 42 },
-    { name: "Drinks", icon: "🥤", color: "from-blue-500 to-indigo-500", count: 90 },
-    { name: "Salads", icon: "🥗", color: "from-green-500 to-emerald-500", count: 55 },
-  ];
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/categories`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        setCategories(data.categories || []);
+      } catch {
+        // silent — categories are decorative on failure
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const colorFor = (idx: number) => {
+    const colors = [
+      "from-orange-500 to-red-500",
+      "from-red-500 to-pink-500",
+      "from-teal-500 to-cyan-500",
+      "from-pink-500 to-purple-500",
+      "from-blue-500 to-indigo-500",
+      "from-green-500 to-emerald-500",
+      "from-yellow-500 to-orange-500",
+      "from-purple-500 to-pink-500",
+    ];
+    return colors[idx % colors.length];
+  };
 
   return (
     <section className="relative py-24">
@@ -274,94 +320,113 @@ function Categories() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">
-          {categories.map((cat) => (
-            <button
-              key={cat.name}
-              className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur transition hover:-translate-y-2 hover:border-orange-500/50"
-            >
+        {/* Loading skeleton */}
+        {loading && (
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">
+            {[...Array(6)].map((_, i) => (
               <div
-                className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-0 transition group-hover:opacity-10`}
+                key={i}
+                className="h-32 animate-pulse rounded-3xl border border-white/10 bg-white/5"
               />
-              <div className="relative text-4xl transition group-hover:scale-125">
-                {cat.icon}
-              </div>
-              <div className="relative mt-3 font-bold">{cat.name}</div>
-              <div className="relative text-xs text-gray-500">{cat.count} items</div>
-            </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && categories.length === 0 && (
+          <p className="text-center text-sm text-gray-500">
+            No categories yet.
+          </p>
+        )}
+
+        {/* Categories grid */}
+        {!loading && categories.length > 0 && (
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">
+            {categories.map((cat, idx) => (
+              <Link
+                key={cat.id}
+                href={`/menu?category=${cat.slug}`}
+                className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 text-center backdrop-blur transition hover:-translate-y-2 hover:border-orange-500/50"
+              >
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${colorFor(
+                    idx
+                  )} opacity-0 transition group-hover:opacity-10`}
+                />
+
+                {/* Icon: prefer uploaded image, fallback to emoji */}
+                <div className="relative flex justify-center transition group-hover:scale-125">
+                  {cat.icon_url ? (
+                    <img
+                      src={cat.icon_url}
+                      alt={cat.name}
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-4xl">{cat.icon || "🍽️"}</span>
+                  )}
+                </div>
+
+                <div className="relative mt-3 font-bold capitalize">
+                  {cat.name}
+                </div>
+                <div className="relative text-xs text-gray-500">
+                  {cat.product_count ?? 0} items
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
 }
 
 /* ============================================================
-   FEATURED DISHES
+   FEATURED DISHES — now dynamic, top-rated products
 ============================================================ */
 function FeaturedDishes() {
-  const dishes = [
-    {
-      name: "Double Cheeseburger",
-      desc: "Juicy beef patties, melted cheddar, fresh veggies",
-      price: 12.99,
-      oldPrice: 16.99,
-      rating: 4.9,
-      time: "25 min",
-      img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80",
-      tag: "Popular",
-    },
-    {
-      name: "Pepperoni Pizza",
-      desc: "Wood-fired crust, premium pepperoni, mozzarella",
-      price: 15.99,
-      oldPrice: 19.99,
-      rating: 4.8,
-      time: "30 min",
-      img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80",
-      tag: "Hot 🔥",
-    },
-    {
-      name: "Salmon Sushi Set",
-      desc: "Fresh salmon nigiri, maki rolls, wasabi",
-      price: 22.99,
-      oldPrice: 28.99,
-      rating: 4.9,
-      time: "35 min",
-      img: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&q=80",
-      tag: "Chef's Pick",
-    },
-    {
-      name: "Chocolate Lava Cake",
-      desc: "Warm molten center, vanilla ice cream",
-      price: 8.99,
-      oldPrice: 11.99,
-      rating: 5.0,
-      time: "20 min",
-      img: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=600&q=80",
-      tag: "New",
-    },
-    {
-      name: "Fresh Berry Smoothie",
-      desc: "Mixed berries, banana, Greek yogurt",
-      price: 6.99,
-      oldPrice: 8.99,
-      rating: 4.7,
-      time: "15 min",
-      img: "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=600&q=80",
-      tag: "Healthy",
-    },
-    {
-      name: "Caesar Salad Bowl",
-      desc: "Crisp romaine, parmesan, grilled chicken",
-      price: 10.99,
-      oldPrice: 13.99,
-      rating: 4.6,
-      time: "20 min",
-      img: "https://images.unsplash.com/photo-1546793665-c74683f339c1?w=600&q=80",
-      tag: "Light",
-    },
-  ];
+  const { addItem } = useCart();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [addingId, setAddingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/products?sort=rating`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        // Take top 6
+        setProducts((data.products || []).slice(0, 6));
+      } catch {
+        // silent
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const handleQuickAdd = async (product: Product) => {
+    // Variant products need a picker → go to detail
+    if (product.variants && product.variants.length > 0) {
+      window.location.href = `/menu/${product.id}`;
+      return;
+    }
+
+    if (addingId) return;
+    setAddingId(product.id);
+
+    const res = await addItem({
+      product_id: product.id,
+      variant_id: null,
+      quantity: 1,
+    });
+
+    setAddingId(null);
+
+    if (!res.ok) alert(res.error || "Could not add to cart");
+  };
 
   return (
     <section className="relative py-24">
@@ -378,62 +443,135 @@ function FeaturedDishes() {
               </span>
             </h2>
           </div>
-          <button className="rounded-full border border-white/20 px-6 py-3 text-sm font-semibold transition hover:bg-white/10">
+          <Link
+            href="/menu"
+            className="rounded-full border border-white/20 px-6 py-3 text-sm font-semibold transition hover:bg-white/10"
+          >
             View All Menu →
-          </button>
+          </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {dishes.map((dish) => (
-            <div
-              key={dish.name}
-              className="group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent p-4 transition hover:-translate-y-2 hover:border-orange-500/50 hover:shadow-2xl hover:shadow-orange-500/20"
-            >
-              <div className="relative h-56 overflow-hidden rounded-2xl">
-                <img
-                  src={dish.img}
-                  alt={dish.name}
-                  className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <span className="absolute left-3 top-3 rounded-full bg-orange-500 px-3 py-1 text-xs font-bold">
-                  {dish.tag}
-                </span>
-                <button className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur transition hover:bg-red-500">
-                  ♡
-                </button>
-                <span className="absolute bottom-3 left-3 rounded-full bg-black/60 px-3 py-1 text-xs backdrop-blur">
-                  ⏱ {dish.time}
-                </span>
-              </div>
+        {/* Loading skeleton */}
+        {loading && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="h-96 animate-pulse rounded-3xl border border-white/10 bg-white/5"
+              />
+            ))}
+          </div>
+        )}
 
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-lg font-bold">{dish.name}</h3>
-                  <div className="flex items-center gap-1 text-sm">
-                    <span className="text-yellow-400">★</span>
-                    <span className="font-semibold">{dish.rating}</span>
+        {/* Empty state */}
+        {!loading && products.length === 0 && (
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-16 text-center">
+            <div className="text-5xl">🍽️</div>
+            <h3 className="mt-4 text-xl font-bold">No dishes yet</h3>
+            <p className="mt-2 text-sm text-gray-400">
+              Check back soon or browse the full menu.
+            </p>
+          </div>
+        )}
+
+        {/* Products grid */}
+        {!loading && products.length > 0 && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {products.map((dish) => {
+              const hasVariants = (dish.variants?.length || 0) > 0;
+              const isAdding = addingId === dish.id;
+              const tag = dish.popular
+                ? "Popular"
+                : dish.veg
+                  ? "Veg"
+                  : dish.spicy
+                    ? "Spicy"
+                    : "New";
+
+              return (
+                <div
+                  key={dish.id}
+                  className="group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent p-4 transition hover:-translate-y-2 hover:border-orange-500/50 hover:shadow-2xl hover:shadow-orange-500/20"
+                >
+                  <Link
+                    href={`/menu/${dish.id}`}
+                    className="relative block h-56 overflow-hidden rounded-2xl"
+                  >
+                    <img
+                      src={dish.img}
+                      alt={dish.name}
+                      className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <span className="absolute left-3 top-3 rounded-full bg-orange-500 px-3 py-1 text-xs font-bold">
+                      {tag}
+                    </span>
+                    {hasVariants && (
+                      <span className="absolute right-14 top-3 rounded-full bg-purple-500/90 px-3 py-1 text-xs font-bold">
+                        {dish.variants!.length} sizes
+                      </span>
+                    )}
+                    <button
+                      onClick={(e) => e.preventDefault()}
+                      className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur transition hover:bg-red-500"
+                    >
+                      ♡
+                    </button>
+                    <span className="absolute bottom-3 left-3 rounded-full bg-black/60 px-3 py-1 text-xs backdrop-blur">
+                      ⏱ {dish.time}
+                    </span>
+                  </Link>
+
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <Link
+                        href={`/menu/${dish.id}`}
+                        className="text-lg font-bold hover:text-orange-400"
+                      >
+                        {dish.name}
+                      </Link>
+                      <div className="flex items-center gap-1 text-sm">
+                        <span className="text-yellow-400">★</span>
+                        <span className="font-semibold">
+                          {Number(dish.rating).toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="mt-1 text-sm text-gray-400 line-clamp-2">
+                      {dish.description || dish.long_desc}
+                    </p>
+
+                    <div className="mt-5 flex items-center justify-between">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-black text-orange-400">
+                          {hasVariants ? "from " : ""}
+                          {formatPKR(Number(dish.price))}
+                        </span>
+                        {dish.old_price && (
+                          <span className="text-sm text-gray-500 line-through">
+                            {formatPKR(Number(dish.old_price))}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleQuickAdd(dish)}
+                        disabled={isAdding}
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-xl font-bold shadow-lg shadow-orange-500/30 transition hover:scale-110 disabled:opacity-60"
+                        aria-label={hasVariants ? "Choose size" : "Add to cart"}
+                      >
+                        {isAdding ? (
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                        ) : (
+                          "+"
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <p className="mt-1 text-sm text-gray-400 line-clamp-2">{dish.desc}</p>
-
-                <div className="mt-5 flex items-center justify-between">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-orange-400">
-                      ${dish.price}
-                    </span>
-                    <span className="text-sm text-gray-500 line-through">
-                      ${dish.oldPrice}
-                    </span>
-                  </div>
-                  <button className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-xl font-bold shadow-lg shadow-orange-500/30 transition hover:scale-110">
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -444,10 +582,30 @@ function FeaturedDishes() {
 ============================================================ */
 function HowItWorks() {
   const steps = [
-    { num: "01", icon: "📍", title: "Choose Your Location", desc: "Set your delivery address and discover restaurants near you." },
-    { num: "02", icon: "🍽️", title: "Pick Your Food", desc: "Browse menus from hundreds of top-rated local restaurants." },
-    { num: "03", icon: "💳", title: "Easy Payment", desc: "Pay securely with card, wallet, or cash on delivery." },
-    { num: "04", icon: "🛵", title: "Fast Delivery", desc: "Track your order live and get it hot at your door." },
+    {
+      num: "01",
+      icon: "📍",
+      title: "Choose Your Location",
+      desc: "Set your delivery address and discover restaurants near you.",
+    },
+    {
+      num: "02",
+      icon: "🍽️",
+      title: "Pick Your Food",
+      desc: "Browse menus from hundreds of top-rated local restaurants.",
+    },
+    {
+      num: "03",
+      icon: "💳",
+      title: "Easy Payment",
+      desc: "Pay securely with card, wallet, or cash on delivery.",
+    },
+    {
+      num: "04",
+      icon: "🛵",
+      title: "Fast Delivery",
+      desc: "Track your order live and get it hot at your door.",
+    },
   ];
 
   return (
@@ -476,7 +634,9 @@ function HowItWorks() {
                 <div className="absolute -top-4 left-8 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-3 py-1 text-xs font-black">
                   {step.num}
                 </div>
-                <div className="text-5xl transition group-hover:scale-110">{step.icon}</div>
+                <div className="text-5xl transition group-hover:scale-110">
+                  {step.icon}
+                </div>
                 <h3 className="mt-5 text-xl font-bold">{step.title}</h3>
                 <p className="mt-2 text-sm text-gray-400">{step.desc}</p>
               </div>
@@ -534,7 +694,9 @@ function Testimonials() {
               key={r.name}
               className="group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent p-8 transition hover:-translate-y-2 hover:border-orange-500/50"
             >
-              <div className="absolute -right-4 -top-4 text-8xl text-orange-500/10">"</div>
+              <div className="absolute -right-4 -top-4 text-8xl text-orange-500/10">
+                "
+              </div>
               <div className="text-yellow-400">★★★★★</div>
               <p className="mt-4 text-gray-300">{r.text}</p>
               <div className="mt-6 flex items-center gap-3">
@@ -578,9 +740,12 @@ function CTA() {
           <p className="relative mx-auto mt-4 max-w-xl text-lg text-white/90">
             Order now and get your favorite meal delivered in under 30 minutes.
           </p>
-          <button className="relative mt-8 rounded-full bg-black px-10 py-4 text-lg font-bold text-white shadow-2xl transition hover:scale-105">
+          <Link
+            href="/menu"
+            className="relative mt-8 inline-block rounded-full bg-black px-10 py-4 text-lg font-bold text-white shadow-2xl transition hover:scale-105"
+          >
             Order Now →
-          </button>
+          </Link>
         </div>
       </div>
     </section>
