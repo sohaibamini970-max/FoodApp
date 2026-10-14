@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useCart } from "../../components/CartContext";
-import { useAuth } from "../../components/AuthContext";
+import { useCart } from "./CartContext";
+import { useAuth } from "./AuthContext";
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);

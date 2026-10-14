@@ -1,6 +1,6 @@
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import OrdersContent from "../components/OrdersContent";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import OrdersContent from "@/components/OrdersContent";
 
 export const metadata = { title: "My Orders — FoodieHub" };
 

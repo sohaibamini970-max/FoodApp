@@ -1,6 +1,6 @@
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import ReviewsContent from "../components/ReviewsContent";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import ReviewsContent from "@/components/ReviewsContent";
 
 export default function ReviewsPage() {
   return (

@@ -1,6 +1,6 @@
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import MenuContent from "../components/MenuContent";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import MenuContent from "@/components/MenuContent";
 
 export default function MenuPage() {
   return (

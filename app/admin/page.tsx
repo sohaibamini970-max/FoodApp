@@ -54,6 +54,18 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [today, setToday] = useState("");
+
+  useEffect(() => {
+    setToday(
+      new Date().toLocaleDateString("en-PK", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    );
+  }, []);
 
   /* ═══════════════ Load everything in parallel ═══════════════ */
   useEffect(() => {
@@ -284,14 +296,7 @@ export default function AdminDashboard() {
               <span className="font-semibold text-white">{user?.name}</span> 👋
             </p>
           </div>
-          <div className="text-xs text-gray-500">
-            {new Date().toLocaleDateString("en-PK", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </div>
+          <div className="text-xs text-gray-500">{today}</div>
         </div>
 
         {error && (

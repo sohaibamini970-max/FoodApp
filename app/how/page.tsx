@@ -1,6 +1,6 @@
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import HowContent from "../components/HowContent";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import HowContent from "@/components/HowContent";
 
 export default function HowPage() {
   return (

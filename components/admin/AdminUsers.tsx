@@ -319,7 +319,7 @@ export default function AdminUsers() {
                   onChange={(e) =>
                     setForm({ ...form, role: e.target.value as "admin" | "user" })
                   }
-                  disabled={editing && isSelf(editing)}
+                  disabled={editing ? isSelf(editing) : false}
                   className="w-full cursor-pointer rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm outline-none disabled:opacity-50"
                 >
                   <option value="user" className="bg-[#111]">👤 Customer</option>

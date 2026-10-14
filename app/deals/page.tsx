@@ -1,6 +1,6 @@
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import DealsContent from "../components/DealsContent";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import DealsContent from "@/components/DealsContent";
 
 export default function DealsPage() {
   return (

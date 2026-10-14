@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
-import { useCart, formatPKR } from "../../components/CartContext";
+import { useCart, formatPKR } from "./CartContext";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -198,7 +198,7 @@ export default function MenuContent() {
         ];
         setCategories(pills);
 
-        const highest = Math.max(0, ...mapped.map((d) => d.price));
+        const highest = Math.max(0, ...mapped.map((d: Dish) => Number(d.price)));
         if (highest > 3000) setMaxPrice(Math.ceil(highest / 100) * 100);
       } catch {
         if (!cancelled) setApiError("Could not load menu. Please refresh.");

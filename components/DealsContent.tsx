@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useCart, formatPKR } from "../../components/CartContext";
+import { useCart, formatPKR } from "./CartContext";
 import type { Deal } from "@/lib/types";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
