@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useCart, formatPKR } from "./CartContext";
+import { useCart, formatPKR } from "../../components/CartContext";
 
 type Deal = {
   id: number;

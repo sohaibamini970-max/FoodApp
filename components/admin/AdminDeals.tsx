@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { formatPKR } from "../../app/components/CartContext";
+import { formatPKR } from "../CartContext";
 
 type Deal = {
   id: number;

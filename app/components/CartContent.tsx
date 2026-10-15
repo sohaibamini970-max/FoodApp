@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useCart, formatPKR } from "./CartContext";
+import { useCart, formatPKR } from "../../components/CartContext";
 
 export default function CartContent() {
   const {

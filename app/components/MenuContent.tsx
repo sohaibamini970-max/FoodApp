@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import Link from "next/link";
+import { useCart, formatPKR } from "../../components/CartContext";
 
 type Dish = {
   id: number;
@@ -265,9 +267,6 @@ const DISHES: Dish[] = [
   },
 ];
 
-/* Format number as PKR */
-const formatPKR = (n: number) => `Rs ${n.toLocaleString("en-PK")}`;
-
 export default function MenuContent() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
@@ -276,9 +275,12 @@ export default function MenuContent() {
   >("popular");
   const [onlyVeg, setOnlyVeg] = useState(false);
   const [maxPrice, setMaxPrice] = useState(3000);
-  const [cart, setCart] = useState<number[]>([]);
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [quantity, setQuantity] = useState(1);
+
+  // Global cart
+  const { items, addItem, totalItems, subtotal } = useCart();
+  const cartIds = items.map((i) => i.id);
 
   // Reset quantity when opening a new dish
   useEffect(() => {
@@ -287,11 +289,7 @@ export default function MenuContent() {
 
   // Lock scroll when modal is open
   useEffect(() => {
-    if (selectedDish) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    document.body.style.overflow = selectedDish ? "hidden" : "unset";
     return () => {
       document.body.style.overflow = "unset";
     };
@@ -331,25 +329,35 @@ export default function MenuContent() {
         list = [...list].sort((a, b) => b.rating - a.rating);
         break;
       default:
-        list = [...list].sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0));
+        list = [...list].sort(
+          (a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0)
+        );
     }
     return list;
   }, [activeCategory, search, sortBy, onlyVeg, maxPrice]);
 
-  const addToCart = (id: number, e?: React.MouseEvent) => {
+  /* ============ ADD TO CART ============ */
+  const addToCart = (dish: Dish, e?: React.MouseEvent, qty = 1) => {
     e?.stopPropagation();
-    setCart([...cart, id]);
+    addItem(
+      {
+        id: dish.id,
+        name: dish.name,
+        price: dish.price,
+        oldPrice: dish.oldPrice,
+        img: dish.img,
+        time: dish.time,
+        category: dish.category,
+      },
+      qty
+    );
   };
 
-  const addMultipleToCart = (id: number, qty: number) => {
-    setCart([...cart, ...Array(qty).fill(id)]);
+  const handleAddFromModal = () => {
+    if (!selectedDish) return;
+    addToCart(selectedDish, undefined, quantity);
     setSelectedDish(null);
   };
-
-  const cartTotal = DISHES.filter((d) => cart.includes(d.id)).reduce(
-    (s, d) => s + d.price,
-    0
-  );
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white">
@@ -593,15 +601,15 @@ export default function MenuContent() {
                       )}
                     </div>
                     <button
-                      onClick={(e) => addToCart(dish.id, e)}
+                      onClick={(e) => addToCart(dish, e)}
                       className={`flex h-10 w-10 items-center justify-center rounded-full text-xl font-bold transition hover:scale-110 ${
-                        cart.includes(dish.id)
+                        cartIds.includes(dish.id)
                           ? "bg-green-500 shadow-lg shadow-green-500/30"
                           : "bg-gradient-to-r from-orange-500 to-red-500 shadow-lg shadow-orange-500/30"
                       }`}
                       aria-label="Add to cart"
                     >
-                      {cart.includes(dish.id) ? "✓" : "+"}
+                      {cartIds.includes(dish.id) ? "✓" : "+"}
                     </button>
                   </div>
                 </div>
@@ -632,15 +640,12 @@ export default function MenuContent() {
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
           onClick={() => setSelectedDish(null)}
         >
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md animate-[fadeIn_0.2s_ease-out]" />
 
-          {/* Modal */}
           <div
             onClick={(e) => e.stopPropagation()}
             className="relative z-10 max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-3xl border border-white/10 bg-[#111] shadow-2xl animate-[scaleIn_0.25s_ease-out]"
           >
-            {/* Close */}
             <button
               onClick={() => setSelectedDish(null)}
               className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-lg backdrop-blur transition hover:bg-red-500 hover:scale-110"
@@ -659,7 +664,6 @@ export default function MenuContent() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-transparent lg:to-[#111]/80" />
 
-                {/* Tags on image */}
                 <div className="absolute left-4 top-4 flex flex-wrap gap-2">
                   {selectedDish.tags.map((t) => (
                     <span
@@ -671,7 +675,6 @@ export default function MenuContent() {
                   ))}
                 </div>
 
-                {/* Bottom info overlay */}
                 <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
                   <span className="rounded-full bg-black/60 px-3 py-1.5 text-xs backdrop-blur">
                     ⏱ {selectedDish.time}
@@ -687,7 +690,6 @@ export default function MenuContent() {
 
               {/* Right — Details */}
               <div className="overflow-y-auto p-6 sm:p-8 lg:max-h-[92vh]">
-                {/* Category + rating */}
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-widest text-orange-400">
                     {selectedDish.category}
@@ -701,12 +703,10 @@ export default function MenuContent() {
                   </div>
                 </div>
 
-                {/* Title */}
                 <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl">
                   {selectedDish.name}
                 </h2>
 
-                {/* Badges */}
                 <div className="mt-4 flex flex-wrap gap-2">
                   {selectedDish.popular && (
                     <span className="rounded-full bg-orange-500/20 px-3 py-1 text-xs font-semibold text-orange-300">
@@ -725,7 +725,6 @@ export default function MenuContent() {
                   )}
                 </div>
 
-                {/* Price */}
                 <div className="mt-6 flex items-baseline gap-3">
                   <span className="text-4xl font-black text-orange-400">
                     {formatPKR(selectedDish.price)}
@@ -743,7 +742,6 @@ export default function MenuContent() {
                   )}
                 </div>
 
-                {/* Description */}
                 <div className="mt-6">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">
                     Description
@@ -753,7 +751,6 @@ export default function MenuContent() {
                   </p>
                 </div>
 
-                {/* Ingredients */}
                 <div className="mt-6">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">
                     Ingredients
@@ -770,7 +767,6 @@ export default function MenuContent() {
                   </div>
                 </div>
 
-                {/* Quantity + Add to cart */}
                 <div className="mt-8 flex flex-col gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center">
                   <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 p-1">
                     <button
@@ -791,9 +787,7 @@ export default function MenuContent() {
                   </div>
 
                   <button
-                    onClick={() =>
-                      addMultipleToCart(selectedDish.id, quantity)
-                    }
+                    onClick={handleAddFromModal}
                     className="group flex flex-1 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4 font-bold shadow-2xl shadow-orange-500/30 transition hover:scale-[1.02]"
                   >
                     <span>🛒 Add to Cart</span>
@@ -802,7 +796,6 @@ export default function MenuContent() {
                   </button>
                 </div>
 
-                {/* Extras */}
                 <div className="mt-6 grid grid-cols-3 gap-3 text-center text-xs">
                   <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                     <div className="text-2xl">🚚</div>
@@ -824,20 +817,26 @@ export default function MenuContent() {
       )}
 
       {/* ============ CART FLOATING BUTTON ============ */}
-      {cart.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 animate-[slideUp_0.3s_ease-out]">
-          <button className="group flex items-center gap-4 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4 font-bold shadow-2xl shadow-orange-500/50 transition hover:scale-105">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/30">
+      {totalItems > 0 && (
+        <Link
+          href="/cart"
+          className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 animate-[slideUp_0.3s_ease-out]"
+        >
+          <span className="group flex cursor-pointer items-center gap-4 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4 font-bold shadow-2xl shadow-orange-500/50 transition hover:scale-105">
+            <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-black/30">
               🛒
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-black px-1 text-[10px] font-black">
+                {totalItems}
+              </span>
             </span>
-            <span>{cart.length} items</span>
+            <span>{totalItems} items</span>
             <span className="h-4 w-px bg-white/30" />
-            <span>{formatPKR(cartTotal)}</span>
+            <span>{formatPKR(subtotal)}</span>
             <span className="transition-transform group-hover:translate-x-1">
               →
             </span>
-          </button>
-        </div>
+          </span>
+        </Link>
       )}
     </main>
   );

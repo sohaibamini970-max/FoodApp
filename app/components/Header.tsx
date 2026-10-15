@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useCart } from "./CartContext";
+import { useCart } from "../../components/CartContext";
 import { useAuth } from "../../components/AuthContext";
 
 export default function Header() {
@@ -46,6 +46,7 @@ export default function Header() {
     { id: "home", label: "Home", href: "/" },
     { id: "menu", label: "Menu", href: "/menu" },
     { id: "deals", label: "Deals", href: "/deals" },
+    { id: "orders", label: "Orders", href: "/orders" },
     { id: "how", label: "How It Works", href: "/how" },
     { id: "reviews", label: "Reviews", href: "/reviews" },
   ];
@@ -108,12 +109,6 @@ export default function Header() {
 
         {/* Actions */}
         <div className="hidden md:flex items-center gap-3">
-          <button
-            className="rounded-full p-2 transition hover:bg-white/10"
-            aria-label="Search"
-          >
-            🔍
-          </button>
 
           <Link
             href="/cart"
@@ -206,13 +201,13 @@ export default function Header() {
           ) : (
             <>
               <Link
-                href="/register"
+                href="/login"
                 className="rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-semibold backdrop-blur transition hover:bg-white/10"
               >
                 Sign Up
               </Link>
               <Link
-                href="/login"
+                href="/menu"
                 className="rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-6 py-2.5 text-sm font-semibold shadow-lg shadow-orange-500/30 transition hover:scale-105 hover:shadow-orange-500/50"
               >
                 Order Now

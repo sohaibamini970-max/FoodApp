@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { CartProvider } from "./components/CartContext";
-import { AuthProvider } from "../components/AuthContext";
+import { CartProvider } from "../components/CartContext";
+import { AuthProvider } from "@/components/AuthContext";
+import { OrdersProvider } from "@/components/OrdersContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,10 +15,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body>
         <AuthProvider>
-          <CartProvider>{children}</CartProvider>
+          <OrdersProvider>
+            <CartProvider>{children}</CartProvider>
+          </OrdersProvider>
         </AuthProvider>
       </body>
     </html>
