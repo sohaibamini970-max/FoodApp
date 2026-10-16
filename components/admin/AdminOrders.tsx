@@ -53,7 +53,7 @@ export default function AdminOrders() {
         (o) =>
           o.id.toLowerCase().includes(q) ||
           o.userName.toLowerCase().includes(q) ||
-          o.userEmail.toLowerCase().includes(q)
+          o.userEmail?.toLowerCase().includes(q) ?? false
       );
     }
     return list;
