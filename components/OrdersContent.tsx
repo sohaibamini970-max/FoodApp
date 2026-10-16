@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { formatPKR } from "../../app/components/CartContext";
+import { formatPKR } from "../app/components/CartContext";
 import {
   useOrders,
   STATUS_META,
