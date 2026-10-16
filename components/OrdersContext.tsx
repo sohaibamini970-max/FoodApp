@@ -27,6 +27,7 @@ export type Order = {
   discount: number;
   total: number;
   status: OrderStatus;
+  userEmail?: string;  
   createdAt: string;
   estimatedDelivery: string;
   address: string;
