@@ -49,12 +49,12 @@ export default function AdminOrders() {
 
     if (search) {
       const q = search.toLowerCase();
-      list = list.filter(
-        (o) =>
-          o.id.toLowerCase().includes(q) ||
-          o.userName.toLowerCase().includes(q) ||
-          o.userEmail?.toLowerCase().includes(q) ?? false
-      );
+     list = list.filter(
+      (o) =>
+    o.id.toLowerCase().includes(q) ||
+    o.userName.toLowerCase().includes(q) ||
+    (o.userEmail ?? "").toLowerCase().includes(q)
+     );
     }
     return list;
   }, [displayOrders, filter, search]);
