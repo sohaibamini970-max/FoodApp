@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart, formatPKR } from "@/components/CartContext";
 import { useAuth } from "@/components/AuthContext";
-import { getOrCreateSession } from "@/components/CartContext";
+import { getOrCreateSession } from "@/components/CartContext";  // ✅ Keep this at top
+
 const ADMIN_PHONE = "0300-1234567";
 
 export default function CheckoutPage() {
@@ -37,7 +38,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Pre-fill user info when auth hydrates
+  // Pre-fill user info
   useEffect(() => {
     if (user) {
       setForm((f) => ({
@@ -52,59 +53,56 @@ export default function CheckoutPage() {
     promo.trim().toUpperCase() === "FOODIE10" ? Math.round(subtotal * 0.1) : 0;
   const finalTotal = Math.max(0, total - discount);
 
-  import { getOrCreateSession } from "@/components/CartContext";
+  // ❌ NO import here anymore — deleted it
 
-// ...
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError("");
+    if (!form.customer_name.trim()) return setError("Please enter your name");
+    if (!form.customer_phone.trim())
+      return setError("Please enter your phone number");
+    if (form.customer_phone.trim().length < 10)
+      return setError("Please enter a valid phone number");
+    if (!form.delivery_address.trim())
+      return setError("Please enter your delivery address");
+    if (!form.delivery_city.trim()) return setError("Please enter your city");
+    if (
+      (paymentMethod === "jazzcash" || paymentMethod === "easypaisa") &&
+      !txnId.trim()
+    )
+      return setError("Please enter the Transaction ID from your payment");
 
-  // Client-side validation
-  if (!form.customer_name.trim()) return setError("Please enter your name");
-  if (!form.customer_phone.trim())
-    return setError("Please enter your phone number");
-  if (form.customer_phone.trim().length < 10)
-    return setError("Please enter a valid phone number");
-  if (!form.delivery_address.trim())
-    return setError("Please enter your delivery address");
-  if (!form.delivery_city.trim()) return setError("Please enter your city");
-  if (
-    (paymentMethod === "jazzcash" || paymentMethod === "easypaisa") &&
-    !txnId.trim()
-  )
-    return setError("Please enter the Transaction ID from your payment");
+    setSubmitting(true);
 
-  setSubmitting(true);
+    const sessionId = getOrCreateSession();
 
-  // 👇 Get the session ID from localStorage
-  const sessionId = getOrCreateSession();
+    const res = await authFetch("/api/orders/checkout", {
+      method: "POST",
+      headers: {
+        "x-cart-session": sessionId,
+      },
+      body: JSON.stringify({
+        ...form,
+        promo_code: promo.trim() || undefined,
+        payment_method: paymentMethod,
+        payment_txn_id: txnId.trim() || undefined,
+      }),
+    });
 
-  const res = await authFetch("/api/orders/checkout", {
-    method: "POST",
-    headers: {
-      "x-cart-session": sessionId,   // 👈 Attach the header
-    },
-    body: JSON.stringify({
-      ...form,
-      promo_code: promo.trim() || undefined,
-      payment_method: paymentMethod,
-      payment_txn_id: txnId.trim() || undefined,
-    }),
-  });
+    const data = await res.json().catch(() => ({}));
+    setSubmitting(false);
 
-  const data = await res.json().catch(() => ({}));
-  setSubmitting(false);
+    if (!res.ok) {
+      setError(data.message || "Could not place order");
+      return;
+    }
 
-  if (!res.ok) {
-    setError(data.message || "Could not place order");
-    return;
-  }
+    await refreshCart();
+    router.push(data.tracking_url || `/order/${data.order.order_token}`);
+  };
 
-  await refreshCart();
-  router.push(data.tracking_url || `/order/${data.order.order_token}`);
-};
-
+  // ... rest of the file unchanged
   /* ── Loading ── */
   if (cartLoading) {
     return (
