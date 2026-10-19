@@ -16,6 +16,7 @@ export default function OrdersPageWrapper() {
         </div>
       }
     >
+      {/* 👇 This now matches the updated signature in OrdersContent */}
       <OrdersContent initialToken={token} />
     </Suspense>
   );
