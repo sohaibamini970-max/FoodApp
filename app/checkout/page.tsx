@@ -73,7 +73,7 @@ export default function CheckoutPage() {
 
     setSubmitting(true);
 
-    const res = await authFetch("https://food-app-backend-nine.vercel.app/api/orders/checkout", {
+    const res = await authFetch("/api/orders/checkout", {
       method: "POST",
       body: JSON.stringify({
         ...form,
