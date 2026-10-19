@@ -1,13 +1,18 @@
 "use client";
 
-import { useParams } from "next/navigation";
 import { Suspense } from "react";
+import { useParams } from "next/navigation";
 import OrdersContent from "./OrdersContent";
 
-export default function OrdersPageWrapper() {
+// Inner component that reads the hook (this MUST be inside Suspense)
+function TokenReader() {
   const params = useParams();
   const token = params?.token as string | undefined;
+  return <OrdersContent initialToken={token} />;
+}
 
+// Outer wrapper provides the Suspense boundary
+export default function OrdersPageWrapper() {
   return (
     <Suspense
       fallback={
@@ -16,8 +21,7 @@ export default function OrdersPageWrapper() {
         </div>
       }
     >
-      {/* 👇 This now matches the updated signature in OrdersContent */}
-      <OrdersContent initialToken={token} />
+      <TokenReader />
     </Suspense>
   );
 }
