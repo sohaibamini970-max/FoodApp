@@ -99,7 +99,7 @@ export default function CheckoutPage() {
     }
 
     await refreshCart();
-    router.push(data.tracking_url || `/order/${data.order.order_token}`);
+    window.location.href = "/orders";
   };
 
   // ... rest of the file unchanged
