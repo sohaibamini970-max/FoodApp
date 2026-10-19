@@ -92,7 +92,7 @@ const mapLine = (row: ApiCartItem): CartItem => ({
   tax_percent: Number(row.tax_percent) || 0,
 });
 
-function getOrCreateSession(): string {
+export function getOrCreateSession(): string {
   let sid = localStorage.getItem(SESSION_KEY);
   if (!sid) {
     sid =
