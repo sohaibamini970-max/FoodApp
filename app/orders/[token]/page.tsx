@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import OrderTrackingContent from "./OrderTrackingContent"; // or whatever component renders the details
+import OrderTrackingContent from "@/components/OrderTrackingContent"; // or whatever component renders the details
 
 export default function OrderTrackingPage() {
   return (
