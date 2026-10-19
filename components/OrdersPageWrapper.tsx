@@ -1,27 +1,19 @@
-"use client";
-
 import { Suspense } from "react";
-import { useParams } from "next/navigation";
-import OrdersContent from "./OrdersContent";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import OrdersPageWrapper from "@/components/OrdersPageWrapper";
 
-// Inner component that reads the hook (this MUST be inside Suspense)
-function TokenReader() {
-  const params = useParams();
-  const token = params?.token as string | undefined;
-  return <OrdersContent initialToken={token} />;
-}
+// 👇 THIS LINE STOPS THE BUILD CRASH
+export const dynamic = 'force-dynamic';
 
-// Outer wrapper provides the Suspense boundary
-export default function OrdersPageWrapper() {
+export const metadata = { title: "Track Order — FoodieHub" };
+
+export default function OrderTrackingPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <span className="h-10 w-10 animate-spin rounded-full border-2 border-white/30 border-t-orange-500" />
-        </div>
-      }
-    >
-      <TokenReader />
-    </Suspense>
+    <main className="min-h-screen bg-[#0a0a0a] text-white">
+      <Header />
+      <OrdersPageWrapper />
+      <Footer />
+    </main>
   );
 }
