@@ -17,7 +17,7 @@ const FILTERS = [
   { id: "cancelled", label: "Cancelled", icon: "❌" },
 ];
 
-export default function OrdersContent() {
+export default function OrdersContent({ initialToken }: { initialToken?: string }) {
   const { orders, loading, cancelOrder } = useOrders();
 
   const [filter, setFilter] = useState("all");
